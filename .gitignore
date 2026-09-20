@@ -9,3 +9,6 @@ venv/
 # Datos generados: conservar únicamente los datasets raw versionados
 /data/processed/*
 !/data/processed/.gitkeep
+# Ignorar datos crudos
+/data/raw/*
+!/data/raw/.gitkeep

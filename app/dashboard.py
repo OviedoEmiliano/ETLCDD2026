@@ -1,29 +1,51 @@
-"""Dashboard interactivo para explorar los datos procesados."""
-
+import streamlit as st
+import pandas as pd
 from pathlib import Path
 
-import pandas as pd
-import streamlit as st
+# Importamos los componentes
+from components.stats_numeric import render_numeric_stats
+from components.stats_categoric import render_categoric_stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+st.set_page_config(page_title="Análisis de Variables - FAA", layout="wide")
 
-st.set_page_config(page_title="Dashboard ETL", page_icon="chart", layout="wide")
-st.title("Dashboard de datos procesados")
+@st.cache_data
+def cargar_datos():
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    ruta_processed = BASE_DIR / "data" / "processed" / "database_clean.csv"
+    return pd.read_csv(ruta_processed)
 
-files = sorted(PROCESSED_DIR.glob("*.csv"))
-if not files:
-    st.info("No hay datasets procesados. Ejecuta primero: python src/main_etl.py")
+df = cargar_datos()
+
+# ==========================================
+# 1. NAVEGACIÓN SIDEBAR
+# ==========================================
+st.sidebar.title("⚙️ Navegación")
+st.sidebar.markdown("Seleccione una variable principal:")
+
+columnas_foco = [
+    'Incident Year', 
+    'Incident Month', 
+    'Incident Day', 
+    'Operator', 
+    'Aircraft'
+]
+
+columnas_disponibles = [col for col in columnas_foco if col in df.columns]
+
+if columnas_disponibles:
+    variable_seleccionada = st.sidebar.radio("Variable a analizar:", columnas_disponibles)
+else:
+    st.sidebar.error("No se encontraron las columnas en el CSV.")
     st.stop()
 
-selected_file = st.sidebar.selectbox("Dataset", files, format_func=lambda path: path.name)
-dataframe = pd.read_csv(selected_file)
+# ==========================================
+# 2. MAIN LAYOUT Y ENRUTAMIENTO
+# ==========================================
+st.title(f"📊 Análisis de: {variable_seleccionada}")
+st.divider()
 
-st.metric("Filas", len(dataframe))
-st.metric("Columnas", len(dataframe.columns))
-st.dataframe(dataframe, use_container_width=True)
-
-numeric_columns = dataframe.select_dtypes(include="number").columns.tolist()
-if numeric_columns:
-    st.subheader("Resumen numérico")
-    st.bar_chart(dataframe[numeric_columns].describe().T["mean"])
+# Lógica de renderizado (El "condicional de React")
+if pd.api.types.is_numeric_dtype(df[variable_seleccionada]):
+    render_numeric_stats(df, variable_seleccionada)
+else:
+    render_categoric_stats(df, variable_seleccionada)
