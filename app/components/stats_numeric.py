@@ -52,10 +52,15 @@ def render_numeric_stats(df, variable):
             sns.barplot(x=df_agrupado.index, y=df_agrupado.values, palette='Blues_d', ax=ax)
             
             # Esta línea mágica es la que dibuja los números exactos arriba de cada barra
-            ax.bar_label(ax.containers[0], fmt='%d', padding=3)
+           # Recorremos TODOS los contenedores para asegurarnos de que cada barra tenga su número
+            for container in ax.containers:
+                ax.bar_label(container, fmt='%d', padding=3)
             
             ax.set_ylabel("Cantidad de Impactos")
             ax.set_xlabel("Día de la Semana")
+            
+            # Damos un 15% extra de margen hacia arriba para que no se corten los números grandes
+            ax.set_ylim(0, df_agrupado.max() * 1.15)
             
             st.pyplot(fig)
         else:
